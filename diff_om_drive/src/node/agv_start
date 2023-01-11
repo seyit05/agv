@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+# -*- coding:utf-8 -*-
+
+import pygame
+from time import sleep
+import os
+import subprocess
+
+
+
+pygame.display.init()
+pygame.font.init()
+screen = pygame.display.set_mode((500,600))#pygame.FULLSCREEN)
+programIcon = pygame.image.load('/home/kavurlar/catkin_ws/src/diff_om_drive/src/node/oya.png')
+pygame.display.set_icon(programIcon)
+
+
+
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREY = (200,200,200)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+orange=(255, 51, 0)
+BLUE=(100,100,255)
+pygame.display.set_caption("AGV KAVURLAR START UP")
+font15 = pygame.font.Font('freesansbold.ttf', 20)  
+text15 = font15.render(u'AGV KAVURLAR START UP', True, BLACK)
+textRect15 = text15.get_rect()  
+textRect15.topleft = (10, 115) 
+screen.blit(text15, textRect15)
+#pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
+screen.fill(GREY)
+pygame.display.flip()
+
+
+	
+
+
+
+
+# Used to manage how fast the screen updates
+clock = pygame.time.Clock()
+pygame.display.flip()
+
+
+
+while True:
+
+	screen.fill(GREY)
+	font2 = pygame.font.Font('freesansbold.ttf', 40)  
+	text15 = font2.render(u'Haritalama Başlat', True, BLACK)
+	textRect1 = text15.get_rect()  
+	textRect1.topleft = (50, 50) 
+	screen.blit(text15, textRect1)
+ 
+	text2 = font2.render(u'Haritalama Durdur', True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (50, 150) 
+	screen.blit(text2, textRect2)
+	
+	text2 = font2.render(u'Rota Başlat', True, BLACK)
+	textRect3 = text2.get_rect()  
+	textRect3.topleft = (50, 250) 
+	screen.blit(text2, textRect3)
+
+	text2 = font2.render(u'Rota Durdur', True, BLACK)
+	textRect4 = text2.get_rect()  
+	textRect4.topleft = (50, 350) 
+	screen.blit(text2, textRect4)
+
+	text2 = font2.render(u'AGV Otonom Çalıştır', True,BLACK)
+	textRect4 = text2.get_rect()  
+	textRect4.topleft = (50, 450) 
+	screen.blit(text2, textRect4)
+
+	text2 = font2.render(u'ÇIKIŞ', True,RED)
+	textRect4 = text2.get_rect()  
+	textRect4.topleft = (50, 550) 
+	screen.blit(text2, textRect4)
+
+
+
+
+	pygame.display.flip()
+	
+	for event in pygame.event.get():
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			pos = event.pos
+			if pos[0]>50 and pos[0]<400 and pos[1]>50 and pos[1]<140 :
+				print("1")
+				os.system("./start_kvr_oya_mapping.sh")
+			elif pos[0]>50 and pos[0]<400 and pos[1]>150 and pos[1]<240:
+				print("2")
+				os.system("rosrun map_server map_saver -f kvr")
+				sleep(1)
+				os.system("yes | cp -i kvr.pgm /home/kavurlar/catkin_ws/src/diff_om_drive/maps/")
+				os.system("yes | cp -i kvr.yaml /home/kavurlar/catkin_ws/src/diff_om_drive/maps/")
+				os.system("rosnode kill -a")
+				sleep(1)
+				os.system("killall -9 roscore")
+			elif pos[0]>50 and pos[0]<400 and pos[1]>250 and pos[1]<340 :
+				print("3")
+				os.system("./start_kvr_oya_rota_ciz.sh")
+			elif pos[0]>50 and pos[0]<400 and pos[1]>350 and pos[1]<440 :
+				print("4")
+				os.system("rosnode kill -a")
+				sleep(1)
+				os.system("killall -9 roscore")
+			elif pos[0]>50 and pos[0]<400 and pos[1]>450 and pos[1]<550 :
+				print("5")
+				os.system("./start_kvr_oya_otonom.sh")
+			elif pos[0]>50 and pos[0]<400 and pos[1]>550 and pos[1]<600 :
+				quit()
+		
+		
+		
+		
+		
+
+		
+	sleep(0.1)
+		
+			
+		
+	
+	
+
+

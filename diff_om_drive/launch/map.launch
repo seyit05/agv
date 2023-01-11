@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+<node name="map" pkg="map_server" type="map_server" args=" /home/kavurlarmakina/Desktop/rota_ve_map/kvr.yaml" respawn="false" output="screen"> 
+<param name="frame_id" value="map"/>
+</node> 
+
+</launch>

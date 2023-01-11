@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+# -*- coding:latin-1 -*-
+import rospy
+import xlwt
+
+
+
+from nav_msgs.msg import Odometry
+from std_msgs.msg import Float32, Byte, String
+from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped, Quaternion
+from tf.transformations import euler_from_quaternion, quaternion_from_euler, quaternion_multiply
+from time import sleep
+from math import pow, atan2, sqrt, pi, atan, sin, cos
+from geometry_msgs.msg import Twist
+import numpy
+import xlrd
+from datetime import datetime
+# Brings in the .action file and messages used by the move base action
+
+
+i=0
+
+
+
+x=0.0
+y=0.0
+
+xx=numpy.array([])
+yy=numpy.array([])
+teta=numpy.array([])
+direction_list=numpy.array([])
+workbook=xlwt.Workbook(encoding='ascii')
+worksheet=workbook.add_sheet('rota')
+
+
+target_x=0.0
+target_y=0.0
+deltax=0.0
+
+current_quat=Quaternion()
+direction=1
+first_flag=0
+
+print("rota kayit started.")
+
+
+def odom_cb(data):
+	global x
+	global y
+	global current_quat
+	global target_x
+	global target_y
+	global first_flag
+	x=data.pose.pose.position.x
+	y=data.pose.pose.position.y
+	current_quat.x= data.pose.pose.orientation.x
+	current_quat.y= data.pose.pose.orientation.y
+	current_quat.z= data.pose.pose.orientation.z
+	current_quat.w= data.pose.pose.orientation.w 
+	if first_flag==0:
+		target_x=x
+		target_y=y
+		first_flag=1
+
+def cmdvel_cb(data):
+	global direction
+	direction=numpy.sign(data.linear.x)
+
+rospy.init_node('generate_route')
+
+odom_sub = rospy.Subscriber('/amcl_pose', PoseWithCovarianceStamped, odom_cb, queue_size=10)
+#cmd_vel_sub = rospy.Subscriber('/cmd_vel', Twist, cmdvel_cb, queue_size=1)
+
+i=0
+
+
+
+if __name__ == '__main__':
+
+	while not rospy.is_shutdown():
+		deltax=sqrt(pow((target_x-x), 2) + pow((target_y-y), 2))			
+		#print(x,target_x,y,target_y,deltax)	
+			
+		if deltax>0.03 and first_flag==1:
+			euler = euler_from_quaternion([current_quat.x,current_quat.y,current_quat.z,current_quat.w])
+			target_x=x
+			target_y=y
+			xxx=x#+0.7*cos(euler[2])
+			yyy=y#+0.7*sin(euler[2])
+			xx=numpy.append(xx,xxx)
+			yy=numpy.append(yy,yyy)
+			teta=numpy.append(teta,euler[2])
+			
+			
+			i=i+1
+
+			print (i)
+			
+			
+			
+		sleep(0.03)
+	rospy.spin()
+		
+	ii=1
+	leng=len(xx)
+	"""worksheet.write(0,0,'Point')
+	worksheet.write(1,0,'yy')
+	worksheet.write(2,0,'xx')
+	worksheet.write(3,0,'direction')
+	worksheet.write(4,0,'wait_for_user_input')
+	worksheet.write(5,0,'speed - linear.x')
+	worksheet.write(6,0,'angular speed - angular.z')"""
+	while ii<leng:
+	
+		worksheet.write(ii,0,ii)
+		worksheet.write(ii,1,yy[ii])
+		worksheet.write(ii,2,xx[ii])
+		worksheet.write(ii,3,teta[ii])
+		ii=ii+1
+	#rota_ad=input('excel dosya ad? girin :')
+	
+	workbook.save('rota'+str(datetime.now())+'.xls')		

@@ -1,0 +1,1102 @@
+#!/usr/bin/env python3
+# -*- coding:utf-8 -*-
+
+import rospy
+import pygame
+
+from nav_msgs.msg import Path
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import PoseWithCovarianceStamped
+from time import sleep
+from math import pow, atan2, sqrt, cos,sin
+from geometry_msgs.msg import Twist
+from std_msgs.msg import Float32, Byte, Bool, Int16
+from sensor_msgs.msg import LaserScan
+from geometry_msgs.msg import Pose, PoseWithCovarianceStamped, Point, Quaternion, Twist, PoseStamped
+from tf.transformations import euler_from_quaternion, quaternion_from_euler, quaternion_multiply
+import numpy
+import os
+import time
+import xlrd
+
+pygame.display.init()
+pygame.font.init()
+screen = pygame.display.set_mode((640, 480))
+
+laser_scan=LaserScan()
+x_k_1=0.0
+y_k_1=0.0
+speed=0.0
+distance=0.0
+bat_level=0.0
+bat_cur=0.0
+bat_voltage=50.0
+bat_voltage_k_1=0.0
+bat_eah=0.0
+bat_ewh=0.0
+AGV_state=''
+
+buton=False
+estop=False
+wireless=False
+
+ls_x=0
+ls_y=0
+x=0.0
+y=0.0
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREY = (200,200,200)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+orange=(255, 51, 0)
+BLUE=(100,100,255)
+ref_set=0
+ref_set_flag=0
+kalan_sure_saat=0
+kalan_sure_dak=0
+pygame.display.set_caption("AGVS")
+#pygame.mouse.set_cursor((8,8),(0,0),(0,0,0,0,0,0,0,0),(0,0,0,0,0,0,0,0))
+screen.fill(GREY)
+pygame.display.flip()
+
+def screen1():
+	global buton
+	global estop
+	global wireless
+	global screen
+	global AGV_state
+	global bat_cur
+	screen.blit(Img2, (0,0))
+
+	
+
+#durum yazimi
+	
+	font2 = pygame.font.Font('freesansbold.ttf', 20)  
+	text2 = font2.render('Durum', True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (30, 135) 
+	screen.blit(text2, textRect2)
+
+	font3 = pygame.font.Font('freesansbold.ttf', 16)  
+	if bat_cur>0.0:
+		AGV_state=u'Batarya şarj oluyor.'
+	text2 = font3.render(AGV_state, True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (220, 135) 
+	screen.blit(text2, textRect2)
+	
+	
+	
+	######batarya
+ 
+	text2 = font2.render('Batarya', True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (30, 190) 
+	screen.blit(text2, textRect2)
+	
+	
+	##### hiz
+	text2 = font2.render(u'H\u0131z metre/dak', True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (30, 245) 
+	screen.blit(text2, textRect2)
+	
+	
+	
+	
+	
+	##### yon
+	text2 = font2.render(u'Batarya Voltaj-V', True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (30, 300) 
+	screen.blit(text2, textRect2)
+	
+	
+	##### istasyon
+	text2 = font2.render(u'Batarya akım-A', True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (30, 355) 
+	screen.blit(text2, textRect2)
+	
+	
+##### durum OK
+	if di_K1_motor_b==False:
+		
+		screen.blit(yesil, (384,171))
+		font11 = pygame.font.Font('freesansbold.ttf', 40)  
+		text11 = font11.render('OK', True, BLACK)
+		textRect11 = text11.get_rect()  
+		textRect11.center = (500, 200) 
+		screen.blit(text11, textRect11)
+	if di_K1_motor_b==True:
+		screen.blit(kirmizi, (384,171))
+		font11 = pygame.font.Font('freesansbold.ttf', 40)  
+		text11 = font11.render(u'ACİL-STOP', True, BLACK)
+		textRect11 = text11.get_rect()  
+		textRect11.center = (500, 200) 
+		screen.blit(text11, textRect11)
+
+
+
+	
+#koordinatlar
+	
+	text2 = font2.render('Koordinatlar', True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (400, 245) 
+	screen.blit(text2, textRect2)
+
+	text2 = font2.render(u'Teşhis', True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (520, 360) 
+	screen.blit(text2, textRect2)
+
+	
+#x
+	
+	
+	
+#monitor sensor list buton
+	
+	
+	
+	
+#monitor nodes buton
+	#monitor sensor list buton
+	
+	
+
+	text2 = font2.render(u'Referans Set', True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (400, 410) 
+	screen.blit(text2, textRect2)
+
+	pygame.display.flip()
+	
+
+def screen2():
+	global screen
+	global x
+	global y
+	global speed
+	global bat_cur
+	global bat_level
+	global bat_voltage
+	global kalan_sure_saat
+	global kalan_sure_dak
+
+
+	font6 = pygame.font.Font('freesansbold.ttf', 20)  
+	text6 = font6.render(str(round(speed,2)), True, BLACK)
+	textRect6 = text6.get_rect()  
+	textRect6.topleft = (220, 245) 
+	screen.blit(text6, textRect6)
+		#x
+	text6 = font6.render('x: '+str(round(x,3))+' ', True, BLACK)
+	textRect6 = text6.get_rect()  
+	textRect6.topleft = (400, 300) 
+	screen.blit(text6, textRect6)
+		
+		#y
+	text6 = font6.render('y: '+str(round(y,3))+' ', True, BLACK)
+	textRect6 = text6.get_rect()  
+	textRect6.topleft = (520, 300) 
+	screen.blit(text6, textRect6)
+
+	
+
+	bat_levell=100*((bat_voltage-45.0)/(56.7-45.0))
+	if bat_levell>100:
+		bat_level=100
+	if bat_levell<0:
+		bat_levell=0
+	if bat_levell>70:
+		renk=GREEN
+	elif bat_levell>20 and bat_levell<70 :
+		renk=orange
+	else :
+		renk=RED
+	pygame.draw.rect(screen,renk,(220,180,abs(int(bat_levell))*1.6,40),0)
+
+	text6 = font6.render(str(int(bat_levell))+ ' %', True, BLACK)
+	textRect6 = text6.get_rect()  
+	textRect6.topleft = (220, 190) 
+	screen.blit(text6, textRect6)
+
+	
+	text6 = font6.render(str(bat_cur), True, BLACK)
+	textRect6 = text6.get_rect()  
+	textRect6.topleft = (220, 355) 
+	screen.blit(text6, textRect6)
+
+	text6 = font6.render(str(bat_voltage), True, BLACK)
+	textRect6 = text6.get_rect()  
+	textRect6.topleft = (220, 300) 
+	screen.blit(text6, textRect6)
+	
+
+	pygame.display.flip()
+	sleep(0.001)
+    
+
+def screen3():
+	global di_K1_motor_b
+	global di_auto_charge_b
+	global di_fren_b
+	global di_manuel_charge_b
+	global di_operator_b
+	global di_proximity_b
+	global di_reflector_b
+	global di_start_b
+	global di_stop_b
+	global di_ultrasonik_b
+	global di_fren_b
+	global enco_L
+	global enco_R
+	global bat_level
+	global bat_cur
+	global bat_voltage
+	
+
+	screen.blit(diag, (0,0))
+	node_list=os.popen('rosnode list').read()
+	i=30
+	j=10
+	font15 = pygame.font.Font('freesansbold.ttf', 20) 
+	text14 = font15.render('Ana Menu', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.topleft = (450, 410) 
+	screen.blit(text14, textRect14)
+
+	 
+	text15 = font15.render(u'Node durum', True, BLACK)
+	textRect15 = text15.get_rect()  
+	textRect15.topleft = (15+j, 115) 
+	screen.blit(text15, textRect15)
+
+	if 'laser_coeff_node' in node_list:
+		stat=1
+	else:
+		stat=0
+	
+	font2 = pygame.font.Font('freesansbold.ttf', 17)  
+	text2 = font2.render(u'Laser güvenlik alan\u0131', True, GREEN if stat==1 else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (15+j, 115+i) 
+	screen.blit(text2, textRect2)
+
+	#om_driver
+	if 'om_driver' in node_list:
+		stat=1
+	else:
+		stat=0
+	text2 = font2.render(u'Motor sürücüsü', True, GREEN if stat==1 else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (15+j, 135+i) 
+	screen.blit(text2, textRect2)
+	#sick_lidar_node
+	if 'SickS300F' in node_list:
+		stat=1
+	else:
+		stat=0
+	text2 = font2.render(u'Sick lidar sürücüsü', True, GREEN if stat==1 else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (15+j, 155+i) 
+	screen.blit(text2, textRect2)
+
+	#batarya node
+	if 'bat_node' in node_list:
+		stat=1
+	else:
+		stat=0
+	text2 = font2.render(u'Batarya node', True, GREEN if stat==1 else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (15+j, 175+i) 
+	screen.blit(text2, textRect2)
+	#laserscan_multi_merger
+	if 'laserscan_multi_merger' in node_list:
+		stat=1
+	else:
+		stat=0
+	text2 = font2.render(u'Lidar merger node', True, GREEN if stat==1 else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (15+j, 195+i) 
+	screen.blit(text2, textRect2)
+	#dio
+	if 'dio' in node_list:
+		stat=1
+	else:
+		stat=0
+	text2 = font2.render(u'Digital i/o node', True, GREEN if stat==1 else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (15+j, 215+i) 
+	screen.blit(text2, textRect2)
+	#diff_tf
+	if 'diff_tf' in node_list:
+		stat=1
+	else:
+		stat=0
+	text2 = font2.render(u'Encoder odom node', True, GREEN if stat==1 else GREEN)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (15+j, 235+i) 
+	screen.blit(text2, textRect2)
+	#screen_node
+	if 'screen_node' in node_list:
+		stat=1
+	else:
+		stat=0
+	text2 = font2.render(u'Ekran node', True, GREEN if stat==1 else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (15+j, 255+i) 
+	screen.blit(text2, textRect2)
+	#task_manger
+	if 'task_manager' in node_list:
+		stat=1
+	else:
+		stat=0
+	text2 = font2.render(u'Görev yöneticisi ', True, GREEN if stat==1 else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (15+j, 275+i) 
+	screen.blit(text2, textRect2)
+
+	#zone_node
+	if 'voxel_grid' in node_list and 'pcl_manager' in node_list and 'cam_safe' in node_list and 'cam_safe' in node_list and 'camera/realsense2_camera' in node_list and 'camera/realsense2_camera_manager' in node_list and 'camera_broadcast' in node_list:
+		stat=1
+	else:
+		stat=0
+		
+		
+	text2 = font2.render(u'Camera safety ', True, GREEN if stat==1 else GREEN)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (15+j, 295+i) 
+	screen.blit(text2, textRect2)
+	
+	#lokalizasyon node check
+	if 'amcl' in node_list and 'robot_pose_ekf' in node_list and 'map' in node_list  and 'foot_print_broadcast' in node_list:
+		stat=1
+	else:
+		stat=0
+		
+		
+	text2 = font2.render(u'Lokalizasyon ', True, GREEN if stat==1 else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (15+j, 315+i) 
+	screen.blit(text2, textRect2)
+
+	font15 = pygame.font.Font('freesansbold.ttf', 20)  
+	text15 = font15.render(u'Digital i/o', True, BLACK)
+	textRect15 = text15.get_rect()  
+	textRect15.topleft = (250, 115) 
+	screen.blit(text15, textRect15)
+
+	text2 = font2.render(u'di_K1_motor', True, GREEN if di_K1_motor_b==True else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (250, 145) 
+	screen.blit(text2, textRect2)
+	
+	text2 = font2.render(u'di_auto_charge', True, GREEN if di_auto_charge_b==True else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (250, 165) 
+	screen.blit(text2, textRect2)
+
+	text2 = font2.render(u'di_fren', True, GREEN if di_fren_b==True else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (250, 185) 
+	screen.blit(text2, textRect2)
+
+	text2 = font2.render(u'di_manuel_charge', True, GREEN if di_manuel_charge_b==True else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (250, 205) 
+	screen.blit(text2, textRect2)
+
+	text2 = font2.render(u'di_operator', True, GREEN if di_operator_b==True else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (250, 225) 
+	screen.blit(text2, textRect2)
+
+	text2 = font2.render(u'di_proximity', True, GREEN if di_proximity_b==True else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (250, 245) 
+	screen.blit(text2, textRect2)
+
+	text2 = font2.render(u'di_reflector', True, GREEN if di_reflector_b==True else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (250, 265) 
+	screen.blit(text2, textRect2)
+
+
+	text2 = font2.render(u'di_start', True, GREEN if di_start_b==True else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (250, 285) 
+	screen.blit(text2, textRect2)
+
+
+	text2 = font2.render(u'di_stop', True, GREEN if di_stop_b==True else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (250, 305) 
+	screen.blit(text2, textRect2)
+
+
+	text2 = font2.render(u'di_ultrasonik', True, GREEN if di_ultrasonik_b==True else RED)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (250, 325) 
+	screen.blit(text2, textRect2)
+
+	text2 = font2.render(u'enco_L : '+str(enco_L), True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (250, 345) 
+	screen.blit(text2, textRect2)
+
+	text2 = font2.render(u'enco_R : '+str(enco_R), True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (250, 365) 
+	screen.blit(text2, textRect2)
+
+	text15 = font15.render(u'Batarya', True, BLACK)
+	textRect15 = text15.get_rect()  
+	textRect15.topleft = (450, 115) 
+	screen.blit(text15, textRect15)
+
+	text2 = font2.render(u'Voltaj : ', True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (450, 145) 
+	screen.blit(text2, textRect2)
+	
+	text2 = font2.render(u'Ak\u0131m : ', True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (450, 165) 
+	screen.blit(text2, textRect2)
+
+	text2 = font2.render(u'Seviye : ', True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (450, 185) 
+	screen.blit(text2, textRect2)
+
+	text2 = font2.render(str(bat_voltage), True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (550, 145) 
+	screen.blit(text2, textRect2)
+	
+	text2 = font2.render(str(bat_cur) , True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (550, 165) 
+	screen.blit(text2, textRect2)
+
+	text2 = font2.render(str(bat_level), True, BLACK)
+	textRect2 = text2.get_rect()  
+	textRect2.topleft = (550, 185) 
+	screen.blit(text2, textRect2)
+
+
+
+	pygame.display.flip()
+	sleep(0.01)
+
+	
+
+def screen4(): #alan tarayici data
+	global laser_scan
+	screen.fill(WHITE)
+	font5 = pygame.font.Font('freesansbold.ttf', 20)  
+	text5 = font5.render(u'Alan Taray\u0131c\u0131', True, BLACK,WHITE)
+	textRect5 = text5.get_rect()  
+	textRect5.topleft = (20, 20) 
+	screen.blit(text5, textRect5)          
+	screen.blit(Img, ((320-152),0))
+	pygame.draw.rect(screen,BLACK,(480,400,160,80),3)
+
+	pygame.draw.rect(screen,BLUE,(480,400,160,80),0)
+	font14 = pygame.font.Font('freesansbold.ttf', 20)  
+	text14 = font14.render('Ana Menu', True, BLACK,BLUE)
+	textRect14 = text14.get_rect()  
+	textRect14.topleft = (500, 420) 
+	screen.blit(text14, textRect14)
+
+	pygame.draw.rect(screen,BLACK,(480,400,160,80),3)
+	    
+	angle=laser_scan.angle_min
+	for ls in laser_scan.ranges:
+		if not numpy.isnan(ls):
+			ls_x=ls*sin(3.1415+angle)
+			ls_y=ls*cos(angle) 
+			pygame.draw.circle(screen, (255, 0, 0), (int(ls_x*200+320),int(ls_y*200+150)), 4)	
+		angle=angle + laser_scan.angle_increment			
+	pygame.display.flip()		
+	sleep(0.033)	
+	
+	
+	
+def screen5(): #referans set
+	global ref_set
+	global ref_set_flag
+	global menu1
+	global menu4
+	screen.blit(ref, (0,0))
+	font5 = pygame.font.Font('freesansbold.ttf', 20)  
+	text5 = font5.render(u'Referans Set', True, BLACK)
+	textRect5 = text5.get_rect()  
+	textRect5.topleft = (75, 115) 
+	screen.blit(text5, textRect5)
+	
+	text5 = font5.render('Ana Menu', True, BLACK)
+	textRect5 = text5.get_rect()  
+	textRect5.topleft = (450, 410) 
+	screen.blit(text5, textRect5)
+
+
+	font14 = pygame.font.Font('freesansbold.ttf', 50) 
+	if ref_set==1:
+		text14 = font14.render('1', True, RED)
+	else:
+		text14 = font14.render('1', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (120, 185) 
+	screen.blit(text14, textRect14)
+
+	#2
+
+	if ref_set==2:
+		text14 = font14.render('2', True, RED)
+	else:
+		text14 = font14.render('2', True, BLACK)
+		
+	textRect14 = text14.get_rect()  
+	textRect14.center = ( 220, 185) 
+	screen.blit(text14, textRect14)
+
+	#3
+	
+
+	
+
+	if ref_set==3:
+		text14 = font14.render('3', True, RED)
+	else:
+		text14 = font14.render('3', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (320, 185) 
+	screen.blit(text14, textRect14)
+
+	#4
+
+	
+
+	if ref_set==4:
+		text14 = font14.render('4', True, RED)
+	else:
+		text14 = font14.render('4', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (420, 185) 
+	screen.blit(text14, textRect14)
+
+	#5
+
+	
+
+	if ref_set==5:
+		text14 = font14.render('5', True, RED)
+	else:
+		text14 = font14.render('5', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (520, 185) 
+	screen.blit(text14, textRect14)
+
+	
+	#6
+
+
+
+	if ref_set==6:
+		text14 = font14.render('6', True, RED)
+	else:
+		text14 = font14.render('6', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (120, 250) 
+	screen.blit(text14, textRect14)
+
+	
+	#7
+
+
+
+	if ref_set==7:
+		text14 = font14.render('7', True, RED)
+	else:
+		text14 = font14.render('7', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (220, 250) 
+	screen.blit(text14, textRect14)
+
+	#8
+	
+
+	if ref_set==8:
+		text14 = font14.render('8', True, RED)
+	else:
+		text14 = font14.render('8', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (320, 250) 
+	screen.blit(text14, textRect14)
+
+	#9
+
+
+	if ref_set==9:
+		text14 = font14.render('9', True, RED)
+	else:
+		text14 = font14.render('9', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (420, 250) 
+	screen.blit(text14, textRect14)
+
+	#10
+
+
+
+	if ref_set==10:
+		text14 = font14.render('10', True, RED)
+	else:
+		text14 = font14.render('10', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (520, 250) 
+	screen.blit(text14, textRect14)
+	
+	#11
+
+
+	if ref_set==11:
+		text14 = font14.render('11', True, RED)
+	else:
+		text14 = font14.render('11', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (120, 315) 
+	screen.blit(text14, textRect14)
+
+	
+	#12
+
+
+
+	if ref_set==12:
+		text14 = font14.render('12', True, RED)
+	else:
+		text14 = font14.render('12', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (220, 315) 
+	screen.blit(text14, textRect14)
+
+	#13
+	
+
+
+
+	if ref_set==13:
+		text14 = font14.render('13', True,RED)
+	else:
+		text14 = font14.render('13', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (320, 315) 
+	screen.blit(text14, textRect14)
+
+	#14
+
+
+	if ref_set==14:
+		text14 = font14.render('14', True, RED)
+	else:
+		text14 = font14.render('14', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (420, 315) 
+	screen.blit(text14, textRect14)
+
+	#15
+
+
+
+	if ref_set==15:
+		text14 = font14.render('15', True, RED)
+	else:
+		text14 = font14.render('15', True, BLACK)
+	textRect14 = text14.get_rect()  
+	textRect14.center = (520, 315) 
+	screen.blit(text14, textRect14)
+
+	
+	if ref_set>0:
+		text5 = font5.render('Referans konum girildi.', True, RED)
+		textRect5.topleft = (20, 400) 
+		screen.blit(text5, textRect5)
+		pygame.display.flip()
+		sleep(1.0)
+		menu1=1
+		menu4=0
+		
+	pygame.display.flip()
+	
+		
+			
+	sleep(0.01)
+
+
+def odom_cb(data):
+	global distance
+	global x_k_1
+	global y_k_1
+	global x
+	global y
+	x=data.pose.pose.position.x
+	y=data.pose.pose.position.y
+	if (abs(speed)>0):
+		distance=distance+sqrt(pow((x_k_1-x), 2) + pow((y_k_1-y), 2))
+		x_k_1=x
+		y_k_1=y
+
+def cmd_cb(data):
+	global speed
+	speed=data.linear.x*60
+
+def bat_lev(data):
+	global bat_level
+	bat_level=round(data.data,2)
+
+def bat_cur_cb(data):
+	global bat_cur
+	bat_cur=round(data.data,2)
+
+def bat_voltage_cb(data):
+	global bat_voltage
+	global bat_voltage_k_1
+	global time
+	global time2
+	global kalan_sure_saat
+	global kalan_sure_dak
+	bat_voltage=round(data.data,3)
+	"""if bat_voltage_k_1-bat_voltage>0.1:
+		time=time.time()
+		bat_voltage_k_1=bat_voltage
+		dt = (time - time2)
+		saniye=(bat_voltage-46.6)*dt*10.0
+		kalan_sure_saat=saniye/3600.0
+		kalan_sure_dak=int((kalan_sure_saat-int(kalan_sure_saat))*60.0)
+		time2=time
+	"""	
+		
+
+def bat_eah_cb(data):
+	global bat_eah
+	bat_eah=round(data.data,2)
+
+
+
+def laser_cb(data):
+	global laser_scan
+	laser_scan=data
+
+
+def di_fren(data):
+    global di_fren_b
+    di_fren_b=data.data
+    
+def di_K1(data):
+    global di_K1_motor_b
+    di_K1_motor_b=data.data
+    
+def di_auto_charge(data):
+    global di_auto_charge_b
+    di_auto_charge_b=data.data
+    
+def di_manuel_charge(data):
+    global di_manuel_charge_b
+    di_manuel_charge_b=data.data
+    
+def di_operator(data):
+    global di_operator_b
+    di_operator_b=data.data
+    
+def di_proximity(data):
+    global di_proximity_b
+    di_proximity_b=data.data
+    
+def di_reflector(data):
+    global di_reflector_b
+    di_reflector_b=data.data
+    
+def di_start(data):
+    global di_start_b
+    global start_flag
+    global stop_flag
+    di_start_b=data.data
+        
+    
+def di_stop(data):
+    global start_flag
+    global stop_flag
+    global di_stop_b
+    di_stop_b=data.data
+    
+    
+def di_ultrasonik(data):
+    global di_ultrasonik_b
+    di_ultrasonik_b=data.data
+def di_fren(data):
+    global di_fren_b
+    di_fren_b=data.data
+
+def lwheel(data):
+	global enco_L
+	enco_L=data.data
+
+def rwheel(data):
+	global enco_R
+	enco_R=data.data
+
+
+def AGV_state_cb(data):
+	global AGV_state
+	if data.data==1:
+		AGV_state=u'Doly kilitlenecek. Bekliyor.'
+	elif data.data==2:
+		AGV_state=u'Doly alındı. Kitleme istasyonuna gidiyor.'
+	elif data.data==3:
+		AGV_state=u'Kitting işleminin tamamlanmasını bekliyor.'
+	elif data.data==4:
+		AGV_state=u'Doly hat beslemesine gidiyor.'
+	elif data.data==5:
+		AGV_state=u'Doly bırakılıyor.'
+	elif data.data==6:
+		AGV_state=u'Boş doly alma noktasına gidiyor.'
+	elif data.data==7:
+		AGV_state=u'Geri hareket.'
+	elif data.data==8:
+		AGV_state=u'AGV trafik kontrolü yapılıyor. Trafik var.'			
+	elif data.data==9:
+		AGV_state=u'Lokalizasyon hatası.'
+	elif data.data==10:
+		AGV_state=u'Öndeki engeli kaldırın. Kaynak kamera güvenlik.'
+	elif data.data==11:
+		AGV_state=u'Öndeki engeli kaldırın. Kaynak lidar güvenlik.'
+	elif data.data==12:
+		AGV_state=u'AGV durduruldu.'
+	elif data.data==13:
+		AGV_state=u'Batarya şarj oluyor.'
+	elif data.data==14:
+		AGV_state=u'Göreve devam etmek için fren anahtarını kapatın!'
+	elif data.data==15:
+		AGV_state=u'Aşırı akım koruması aktif!!! Doly aralarını kontrol edin'
+	else:
+		AGV_state=u'No state'
+	
+
+# Used to manage how fast the screen updates
+clock = pygame.time.Clock()
+pygame.display.flip()
+
+rospy.init_node('screen_node')
+cmd_sub = rospy.Subscriber('/cmd_vel', Twist, cmd_cb, queue_size=1)
+bat_lev1 = rospy.Subscriber('/bat_level', Float32, bat_lev, queue_size=1)
+bat_cur1 = rospy.Subscriber('/bat_cur', Float32, bat_cur_cb, queue_size=1)
+bat_voltage1 = rospy.Subscriber('/bat_voltage', Float32, bat_voltage_cb, queue_size=1)
+ref_pub = rospy.Publisher('/initialpose', PoseWithCovarianceStamped, queue_size=1)
+odom_sub = rospy.Subscriber('/amcl_pose', PoseWithCovarianceStamped, odom_cb, queue_size=1)
+laser_sub = rospy.Subscriber('/laser_all', LaserScan, laser_cb, queue_size=1)
+command_pub = rospy.Publisher('/om_commands', Byte, queue_size=1)
+station_pub = rospy.Publisher('/user_input',Byte, queue_size=1)
+AGV_state_sub = rospy.Subscriber('/AGV_state',Byte,AGV_state_cb,queue_size=1)
+user_input=rospy.Publisher('/user_input',Byte,queue_size=1)
+rospy.Subscriber("di_K1_motor", Bool, di_K1, queue_size=1)
+rospy.Subscriber("di_auto_charge", Bool, di_auto_charge, queue_size=1)
+rospy.Subscriber("di_operator", Bool, di_operator, queue_size=1)
+rospy.Subscriber("di_manuel_charge", Bool, di_manuel_charge, queue_size=1)
+rospy.Subscriber("di_proximity", Bool, di_proximity, queue_size=1)
+rospy.Subscriber("di_reflector", Bool, di_reflector, queue_size=1)
+rospy.Subscriber("di_start", Bool, di_start, queue_size=1)
+rospy.Subscriber("di_stop", Bool, di_stop, queue_size=1)
+rospy.Subscriber("di_ultrasonik", Bool, di_ultrasonik, queue_size=1)
+rospy.Subscriber("di_fren", Bool, di_fren, queue_size=1)
+rospy.Subscriber("/encoL", Int16, lwheel)
+rospy.Subscriber("/encoR", Int16, rwheel)
+
+
+
+di_K1_motor_b=False
+di_auto_charge_b=False
+di_fren_b=False
+di_manuel_charge_b=False
+di_operator_b=False
+di_proximity_b=False
+di_reflector_b=False
+di_start_b=False
+di_stop_b=False
+di_ultrasonik_b=False
+di_fren_b=False
+enco_L=0
+enco_R=0
+
+
+menu1=1
+menu2=0
+menu3=0
+menu4=0
+Img2= pygame.image.load("/home/kavurlar/catkin_ws/src/diff_om_drive/src/node/panel.png").convert()
+ref= pygame.image.load("/home/kavurlar/catkin_ws/src/diff_om_drive/src/node/ref_1.png").convert()
+diag=pygame.image.load("/home/kavurlar/catkin_ws/src/diff_om_drive/src/node/diag.png").convert()
+yesil=pygame.image.load("/home/kavurlar/catkin_ws/src/diff_om_drive/src/node/yesil.png").convert()
+kirmizi=pygame.image.load("/home/kavurlar/catkin_ws/src/diff_om_drive/src/node/kirmizi.png").convert()
+time=time.time()
+time2=time
+command=0
+screen1()
+book=xlrd.open_workbook('/home/kavurlar/catkin_ws/src/diff_om_drive/src/node/referans_noktalar.xls')
+first_sheet=book.sheet_by_index(0)
+rowy=first_sheet.col_values(0)
+rowx=first_sheet.col_values(1)
+rowtheta=first_sheet.col_values(2)
+station_data=first_sheet.col_values(3)
+while not rospy.is_shutdown():
+	
+	for event in pygame.event.get():
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			pos = event.pos
+			if pos[0]>490 and pos[0]<630 and pos[1]>310 and pos[1]<350 and menu1==1:
+				#menu1=0
+				#menu2=1
+				menu3=0
+				#menu4=0
+			elif pos[0]>480 and pos[0]<640 and pos[1]>400 and pos[1]<480 and menu2==1:
+				#menu1=1
+				#menu2=0
+				menu3=0
+				#menu4=0
+			
+			elif pos[0]>515 and pos[0]<610 and pos[1]>350 and pos[1]<385 and menu1==1:
+				menu1=0
+				menu2=0
+				menu3=1
+				menu4=0
+			elif pos[0]>394 and pos[0]<612 and pos[1]>400 and pos[1]<440 and menu3==1:
+				menu3=0
+				menu2=0
+				menu1=1
+				menu4=0
+			elif pos[0]>394 and pos[0]<612 and pos[1]>400 and pos[1]<440 and menu1==1:
+				menu1=0
+				menu2=0
+				menu3=0
+				menu4=1
+			elif pos[0]>330 and pos[0]<470 and pos[1]>370 and pos[1]<410 and menu1==1:
+				user_i=Byte() #sarjagit
+				user_i.data=1
+				user_input.publish(user_i)
+			elif pos[0]>170 and pos[0]<310 and pos[1]>370 and pos[1]<410 and menu1==1:
+				#baslangic oktas\u0131na git
+				user_i=Byte()
+				user_i.data=2
+				user_input.publish(user_i)
+			elif pos[0]>480 and pos[0]<640 and pos[1]>400 and pos[1]<480 and menu4==1:
+				menu1=1
+				menu2=0
+				menu3=0
+				menu4=0
+			elif pos[0]>320 and pos[0]<480 and pos[1]>0 and pos[1]<80 and menu3==1:
+				command=1
+			elif pos[0]>160 and pos[0]<320 and pos[1]>0 and pos[1]<80 and menu3==1:
+				command=2
+			elif pos[0]>0 and pos[0]<160 and pos[1]>0 and pos[1]<80 and menu3==1:
+				command=3
+			elif pos[0]>80 and pos[0]<160 and pos[1]>170 and pos[1]<200 and menu4==1:
+				ref_set=1
+				ref_set_flag=1
+			elif pos[0]>180 and pos[0]<260 and pos[1]>170 and pos[1]<200 and menu4==1:
+				ref_set=2
+				ref_set_flag=1
+			elif pos[0]>250 and pos[0]<350 and pos[1]>170 and pos[1]<200 and menu4==1:
+				ref_set=3
+				ref_set_flag=1
+			elif pos[0]>350 and pos[0]<450 and pos[1]>170 and pos[1]<200 and menu4==1:
+				ref_set=4
+				ref_set_flag=1
+			elif pos[0]>450 and pos[0]<550 and pos[1]>170 and pos[1]<200 and menu4==1:
+				ref_set=5
+				ref_set_flag=1
+			elif pos[0]>80 and pos[0]<160 and pos[1]>230 and pos[1]<260 and menu4==1:
+				ref_set=6
+				ref_set_flag=1
+			elif pos[0]>180 and pos[0]<260 and pos[1]>230 and pos[1]<260 and menu4==1:
+				ref_set=7
+				ref_set_flag=1
+			elif pos[0]>280 and pos[0]<360 and pos[1]>230 and pos[1]<260 and menu4==1:
+				ref_set=8
+				ref_set_flag=1
+			elif pos[0]>380 and pos[0]<460 and pos[1]>230 and pos[1]<260 and menu4==1:
+				ref_set=9
+				ref_set_flag=1
+			elif pos[0]>480 and pos[0]<560 and pos[1]>230 and pos[1]<260 and menu4==1:
+				ref_set=10
+				ref_set_flag=1
+			elif pos[0]>80 and pos[0]<160 and pos[1]>290 and pos[1]<320 and menu4==1:
+				ref_set=11
+				ref_set_flag=1
+			elif pos[0]>180 and pos[0]<260 and pos[1]>290 and pos[1]<320 and menu4==1:
+				ref_set=12
+				ref_set_flag=1
+			elif pos[0]>280 and pos[0]<360 and pos[1]>290 and pos[1]<320 and menu4==1:
+				ref_set=13
+				ref_set_flag=1
+			elif pos[0]>380 and pos[0]<460 and pos[1]>290 and pos[1]<320  and menu4==1:
+				ref_set=14
+				ref_set_flag=1
+			elif pos[0]>480 and pos[0]<560 and pos[1]>290 and pos[1]<320 and menu4==1:
+				ref_set=15
+				ref_set_flag=1
+
+		
+
+	#while not rospy.is_shutdown():
+	if menu1==1:
+		screen1()
+		screen2()
+		pygame.display.flip()
+	elif menu2==1:
+		screen4()			
+		
+	elif menu3==1:
+		screen3()
+		
+	elif menu4==1:
+		screen5()#------
+		
+	if ref_set_flag==1:
+		ref_set_flag=0
+		pose=PoseWithCovarianceStamped()  
+		pose.header.stamp=rospy.get_rostime()
+		pose.header.frame_id="map"     
+		pose.pose.pose.position.x=rowx[ref_set]
+		pose.pose.pose.position.y=rowy[ref_set]
+		pose.pose.pose.position.z=0
+		quat=Quaternion()
+		[quat.x,quat.y,quat.z,quat.w]= quaternion_from_euler(0.0,0.0,rowtheta[ref_set])
+		pose.pose.pose.orientation.x=quat.x
+		pose.pose.pose.orientation.y=quat.y
+		pose.pose.pose.orientation.z=quat.z
+		pose.pose.pose.orientation.w=quat.w
+		pose.pose.covariance=[0.10, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.10, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0685389232665478]
+		#station=Byte()		
+		station=int(station_data[ref_set])
+		station_pub.publish(station)
+		for i in range(1,2):
+			ref_pub.publish(pose)
+		ref_set=0
+					
+			
+	command_pub.publish(command)
+	command=0		
+	sleep(0.09)
+		
+			
+		
+	
+	
+
+
